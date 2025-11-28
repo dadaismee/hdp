@@ -1,4 +1,4 @@
-name: Build Windows App
+name: Build App
 
 on:
   push:
@@ -7,7 +7,10 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -23,8 +26,13 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Install Pandoc
+    - name: Install Pandoc (Windows)
+      if: runner.os == 'Windows'
       run: choco install pandoc
+
+    - name: Install Pandoc (macOS)
+      if: runner.os == 'macOS'
+      run: brew install pandoc
 
     - name: Build Python Executable
       run: |
@@ -39,12 +47,26 @@ jobs:
       working-directory: ./electron-app
       run: npm install
 
-    - name: Build Electron App
+    - name: Build Electron App (Windows)
+      if: runner.os == 'Windows'
       working-directory: ./electron-app
       run: npm run dist -- --win
 
-    - name: Upload Artifacts
+    - name: Build Electron App (macOS)
+      if: runner.os == 'macOS'
+      working-directory: ./electron-app
+      run: npm run dist -- --mac
+
+    - name: Upload Artifacts (Windows)
+      if: runner.os == 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: Windows-Installer
         path: electron-app/dist/*.exe
+
+    - name: Upload Artifacts (macOS)
+      if: runner.os == 'macOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macOS-Installer
+        path: electron-app/dist/*.dmg

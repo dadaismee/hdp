@@ -1,0 +1,7 @@
+pandas
+litellm
+pyyaml
+python-docx
+beautifulsoup4
+tiktoken
+openai
