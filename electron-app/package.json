@@ -1,0 +1,50 @@
+{
+    "name": "historical-doc-processor",
+    "version": "1.0.0",
+    "description": "Electron interface for Historical Document Processing Pipeline",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    },
+    "author": "Valerii Shevchenko",
+    "license": "ISC",
+    "dependencies": {
+        "electron": "^28.0.0",
+        "js-yaml": "^4.1.0"
+    },
+    "devDependencies": {
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.konspektos.hdp",
+        "productName": "Konspekt HDP",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!dist/**/*",
+            "!**/*.py",
+            "!**/__pycache__/**"
+        ],
+        "extraResources": [
+            {
+                "from": "../dist/process_pipeline",
+                "to": "python",
+                "filter": [
+                    "**/*"
+                ]
+            }
+        ],
+        "mac": {
+            "target": "dmg"
+        },
+        "win": {
+            "target": "nsis"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true
+        }
+    }
+}

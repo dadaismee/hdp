@@ -1,0 +1,179 @@
+import os
+import subprocess
+import sys
+import glob
+import traceback
+import time
+import argparse
+import shutil
+
+# Paths relative to this script
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+DEFAULT_INPUT_DOCS_DIR = os.path.join(PROJECT_ROOT, "input_docs")
+DEFAULT_MD_INBOX_DIR = os.path.join(PROJECT_ROOT, "md")
+DEFAULT_OUTPUT_HTML = os.path.join(PROJECT_ROOT, "md", "tufte_timeline.html")
+
+EXTRACT_SCRIPT = os.path.join(SCRIPT_DIR, "extract_data.py")
+VIZ_SCRIPT = os.path.join(SCRIPT_DIR, "generate_tufte_viz.py")
+
+def log(message):
+    print(f"[{time.strftime('%H:%M:%S')}] {message}")
+    sys.stdout.flush()
+
+def run_command(command):
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        log(f"Ошибка при выполнении команды: {e}")
+        pass
+
+def main():
+    parser = argparse.ArgumentParser(description="Process document pipeline.")
+    parser.add_argument("--output-dir", help="Directory to save processed files.")
+    parser.add_argument("--input-files", nargs="*", help="List of specific input files to process.")
+    args = parser.parse_args()
+
+    log("--- Запуск конвейера обработки документов ---")
+    
+    # Determine Working Directories
+    if args.output_dir:
+        # Custom Mode
+        working_dir = args.output_dir
+        if not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+        
+        # Copy input files if provided
+        if args.input_files:
+            log(f"Копирование {len(args.input_files)} файлов в {working_dir}...")
+            for f in args.input_files:
+                if os.path.exists(f):
+                    shutil.copy2(f, working_dir)
+                else:
+                    log(f"Внимание: Файл не найден: {f}")
+        
+        docx_source_dir = working_dir
+        md_output_dir = working_dir 
+        extract_base_dir = working_dir 
+        
+    else:
+        # Default Mode
+        docx_source_dir = DEFAULT_INPUT_DOCS_DIR
+        md_output_dir = DEFAULT_MD_INBOX_DIR
+        extract_base_dir = None 
+        
+        if not os.path.exists(docx_source_dir):
+            os.makedirs(docx_source_dir)
+            log(f"Создана папка для входящих файлов: {docx_source_dir}")
+            return
+
+        if not os.path.exists(md_output_dir):
+            os.makedirs(md_output_dir)
+
+    # 1. Convert DOCX to MD
+    docx_files = glob.glob(os.path.join(docx_source_dir, "*.docx"))
+    if not docx_files:
+        log(f"Файлы .docx не найдены в {docx_source_dir}")
+    else:
+        # Estimate time: ~2 sec per conversion
+        est_time = len(docx_files) * 2
+        log(f"Найдено {len(docx_files)} файлов. Конвертация в Markdown... (Оценка: ~{est_time} сек)")
+        
+        for i, docx_path in enumerate(docx_files):
+            filename = os.path.basename(docx_path)
+            name_no_ext = os.path.splitext(filename)[0]
+            md_path = os.path.join(md_output_dir, name_no_ext + ".md")
+            
+            if os.path.exists(md_path):
+                src_mtime = os.path.getmtime(docx_path)
+                dst_mtime = os.path.getmtime(md_path)
+                if src_mtime <= dst_mtime:
+                    log(f"[{i+1}/{len(docx_files)}] Пропуск {filename} (уже обработан)")
+                    continue
+            
+            log(f"[{i+1}/{len(docx_files)}] Конвертация {filename}...")
+            
+            # Check for bundled pandoc
+            if getattr(sys, 'frozen', False):
+                # If frozen with PyInstaller, look in _MEIxxxx folder or alongside exe
+                # We will bundle pandoc.exe into the root of the extract folder
+                pandoc_path = os.path.join(sys._MEIPASS, 'pandoc.exe')
+                if not os.path.exists(pandoc_path):
+                     pandoc_path = os.path.join(os.path.dirname(sys.executable), 'pandoc.exe')
+                
+                if not os.path.exists(pandoc_path):
+                    pandoc_path = "pandoc" # Fallback to system path
+            else:
+                pandoc_path = "pandoc"
+
+            cmd = [pandoc_path, docx_path, "-f", "docx", "-t", "markdown", "--wrap=none", "-o", md_path]
+            run_command(cmd)
+
+    # 2. Extract Data
+    # Estimate time: ~30 sec per file for LLM
+    # We count .md files in the target dir
+    md_files = glob.glob(os.path.join(md_output_dir, "*.md"))
+    # Exclude processed
+    files_to_process = []
+    processed_dir = os.path.join(md_output_dir, "Обработанные источники" if args.output_dir else "Processed")
+    
+    for f in md_files:
+        if "Processed" in f or "Обработанные" in f: continue
+        # Check if already in processed dir
+        fname = os.path.basename(f)
+        if os.path.exists(os.path.join(processed_dir, fname)):
+             # Check timestamps (simplified logic here, extract_data does real check)
+             pass
+        files_to_process.append(f)
+
+    # 2. Extract Data & AI Analysis
+    est_llm_time = len(files_to_process) * 30
+    log(f"\n--- Запуск извлечения данных и AI-анализа ---")
+    log(f"Это может занять время (Оценка: ~{est_llm_time // 60} мин {est_llm_time % 60} сек)...")
+    
+    # Prepare args for extract_data
+    extract_args = []
+    if extract_base_dir:
+        extract_args.extend(["--base-dir", extract_base_dir])
+        
+    try:
+        # Import and call directly
+        import extract_data
+        extract_data.main(extract_args)
+    except Exception as e:
+        log(f"Ошибка при извлечении данных: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+
+    # 3. Generate Visualization
+    log("\n--- Генерация визуализации ---")
+    
+    viz_args = []
+    if extract_base_dir:
+        json_dir = os.path.join(extract_base_dir, "json")
+        viz_args.append(json_dir)
+        # Explicitly set output file
+        viz_output = os.path.join(extract_base_dir, "tufte_timeline.html")
+        viz_args.extend(["--output-file", viz_output])
+        
+    try:
+        import generate_tufte_viz
+        generate_tufte_viz.main(viz_args)
+    except Exception as e:
+        log(f"Ошибка при генерации визуализации: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+        
+    # 4. Open Result
+    target_html = DEFAULT_OUTPUT_HTML
+    if extract_base_dir:
+        target_html = os.path.join(extract_base_dir, "tufte_timeline.html")
+        
+    log(f"\n--- Готово! Открываю {os.path.basename(target_html)} ---")
+    if os.path.exists(target_html):
+        subprocess.call(["open", target_html])
+    else:
+        log(f"Файл визуализации не найден: {target_html}")
+
+if __name__ == "__main__":
+    main()

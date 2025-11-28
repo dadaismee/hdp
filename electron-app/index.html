@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Historical Document Processor</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">Визуализатор исторических переписок</div>
+            <nav>
+                <button class="nav-btn active" data-tab="dashboard">
+                    <span class="icon">📂</span> Обработка документов
+                </button>
+                <button class="nav-btn" data-tab="settings">
+                    <span class="icon">⚙️</span> Настройки
+                </button>
+                <button class="nav-btn" data-tab="prompt">
+                    <span class="icon">📝</span> Промпт
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="update-btn" class="secondary-btn small">Проверить обновления</button>
+                <div id="version">v1.0.0</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h1>Обработка документов</h1>
+                <p class="subtitle">Перетащите файлы .docx сюда или нажмите для выбора</p>
+
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-content">
+                        <span class="drop-icon">📄</span>
+                        <h3>Перетащите файлы Word сюда</h3>
+                        <p>или нажмите для выбора</p>
+                    </div>
+                </div>
+
+                <div id="status-area" class="status-area hidden">
+                    <div class="status-header">
+                        <h3>Лог обработки</h3>
+                        <div class="spinner hidden" id="spinner"></div>
+                    </div>
+                    <pre id="log-output"></pre>
+                </div>
+
+                <div style="margin-top: 10px;" class="actions">
+                    <button id="open-viz-btn" class="primary-btn">Открыть визуализацию</button>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <h1>Настройки</h1>
+
+                <div class="setting-group">
+                    <label>Папка для сохранения результатов</label>
+                    <div class="input-row">
+                        <input type="text" id="output-path" readonly placeholder="Выберите папку...">
+                        <button id="select-folder-btn" class="secondary-btn">Обзор</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label>AI Модель</label>
+                    <div class="toggle-row">
+                        <button class="toggle-btn active" data-mode="cloud">Облако (API)</button>
+                        <button class="toggle-btn" data-mode="local">Локально (Ollama)</button>
+                    </div>
+                </div>
+
+                <!-- Cloud Settings -->
+                <div id="cloud-settings" class="settings-section">
+                    <div class="setting-group">
+                        <label>Провайдер</label>
+                        <select id="cloud-provider">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="openrouter">OpenRouter</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>API Key</label>
+                        <input type="password" id="api-key" placeholder="sk-...">
+                        <p class="hint">Получите ключ на <a href="#"
+                                onclick="openUrl('https://platform.openai.com')">OpenAI</a> или <a href="#"
+                                onclick="openUrl('https://console.anthropic.com')">Anthropic</a>.</p>
+                    </div>
+                    <div class="setting-group">
+                        <label>Модель</label>
+                        <input type="text" id="cloud-model" placeholder="gpt-4o, claude-3-5-sonnet...">
+                    </div>
+                </div>
+
+                <!-- Local Settings -->
+                <div id="local-settings" class="settings-section hidden">
+                    <div class="setting-group">
+                        <label>Модель Ollama</label>
+                        <div class="input-row">
+                            <select id="local-model-select">
+                                <option value="" disabled selected>Загрузка моделей...</option>
+                            </select>
+                            <button id="refresh-ollama" class="icon-btn">🔄</button>
+                        </div>
+                        <div id="ollama-warning" class="warning-box hidden">
+                            Ollama не найдена. <button class="link-btn" onclick="openUrl('https://ollama.com')">Скачать
+                                Ollama</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prompt Tab -->
+            <div id="prompt" class="tab-content">
+                <h1>Системный промпт</h1>
+                <p class="subtitle">Редактируйте инструкцию для ИИ аналитика</p>
+                <textarea id="prompt-editor" spellcheck="false"></textarea>
+                <button id="save-prompt-btn" class="primary-btn">Сохранить промпт</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Настройки сохранены</div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

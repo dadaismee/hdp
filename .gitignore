@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+electron-app/node_modules/
+venv/
+.venv/
+
+# Build Output
+dist/
+build/
+electron-app/dist/
+electron-app/build/
+*.exe
+*.dmg
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.spec
+!pyinstaller.spec
+
+# System
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# App specific
+input_docs/
+md/
+json/
