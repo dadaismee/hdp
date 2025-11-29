@@ -4,7 +4,8 @@
     "description": "Electron interface for Historical Document Processing Pipeline",
     "main": "main.js",
     "scripts": {
-        "start": "electron ."
+        "start": "electron .",
+        "dist": "electron-builder"
     },
     "author": "Valerii Shevchenko",
     "license": "ISC",
