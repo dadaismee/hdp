@@ -10,10 +10,10 @@
     "author": "Valerii Shevchenko",
     "license": "ISC",
     "dependencies": {
-        "electron": "^28.0.0",
         "js-yaml": "^4.1.0"
     },
     "devDependencies": {
+        "electron": "^28.0.0",
         "electron-builder": "^24.9.1"
     },
     "build": {
