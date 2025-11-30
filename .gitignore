@@ -9,6 +9,7 @@ dist/
 build/
 electron-app/dist/
 electron-app/build/
+!electron-app/build/pkg-scripts/
 *.exe
 *.dmg
 *.zip

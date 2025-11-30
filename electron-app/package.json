@@ -38,7 +38,12 @@
             }
         ],
         "mac": {
-            "target": "dmg"
+            "target": "pkg"
+        },
+        "pkg": {
+            "scripts": "build/pkg-scripts",
+            "allowAnywhere": true,
+            "isRelocatable": false
         },
         "win": {
             "target": "nsis"

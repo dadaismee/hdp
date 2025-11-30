@@ -69,4 +69,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: macOS-Installer
-        path: electron-app/dist/*.dmg
+        path: electron-app/dist/*.pkg

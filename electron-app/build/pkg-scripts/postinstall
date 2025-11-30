@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# $2 is the installation location (usually /Applications)
+INSTALL_DIR="$2"
+APP_NAME="Konspekt HDP.app"
+APP_PATH="$INSTALL_DIR/$APP_NAME"
+
+echo "Running postinstall for $APP_PATH"
+
+# Remove quarantine attribute to fix "App is damaged" error
+if [ -d "$APP_PATH" ]; then
+    /usr/bin/xattr -cr "$APP_PATH"
+    echo "Fixed attributes for $APP_PATH"
+else
+    echo "App not found at $APP_PATH"
+fi
+
+exit 0
