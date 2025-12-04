@@ -9,7 +9,10 @@ import os
 pandoc_path = shutil.which("pandoc")
 binaries = []
 if pandoc_path:
+    print(f"Found pandoc at: {pandoc_path}")
     binaries.append((pandoc_path, '.'))
+else:
+    print("WARNING: Pandoc not found!")
 
 a = Analysis(
     ['scripts/process_pipeline.py'],

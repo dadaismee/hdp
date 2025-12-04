@@ -96,13 +96,18 @@ def main():
             # Check for bundled pandoc
             if getattr(sys, 'frozen', False):
                 # If frozen with PyInstaller, look in _MEIxxxx folder or alongside exe
-                # We will bundle pandoc.exe into the root of the extract folder
-                pandoc_path = os.path.join(sys._MEIPASS, 'pandoc.exe')
-                if not os.path.exists(pandoc_path):
-                     pandoc_path = os.path.join(os.path.dirname(sys.executable), 'pandoc.exe')
+                mei_pandoc = os.path.join(sys._MEIPASS, 'pandoc.exe')
+                exe_pandoc = os.path.join(os.path.dirname(sys.executable), 'pandoc.exe')
                 
-                if not os.path.exists(pandoc_path):
+                if os.path.exists(mei_pandoc):
+                    pandoc_path = mei_pandoc
+                    log(f"Используется встроенный Pandoc: {pandoc_path}")
+                elif os.path.exists(exe_pandoc):
+                    pandoc_path = exe_pandoc
+                    log(f"Используется внешний Pandoc (рядом с exe): {pandoc_path}")
+                else:
                     pandoc_path = "pandoc" # Fallback to system path
+                    log("Встроенный Pandoc не найден, попытка использовать системный...")
             else:
                 pandoc_path = "pandoc"
 
