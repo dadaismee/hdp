@@ -154,7 +154,7 @@ def process_text_with_llm(text, config):
         {"role": "user", "content": f"Текст документа:\n\n{text[:15000]}"}
     ]
 
-    max_retries = 3
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             response = completion(
@@ -201,7 +201,8 @@ def process_text_with_llm(text, config):
         except Exception as e:
             print(f"Ошибка вызова LLM (Попытка {attempt+1}/{max_retries}): {e}")
             if attempt < max_retries - 1:
-                wait_time = 2 ** attempt
+                # Exponential backoff: 5, 10, 20, 40 seconds
+                wait_time = 5 * (2 ** attempt)
                 print(f"Повтор через {wait_time} сек...")
                 time.sleep(wait_time)
             else:
