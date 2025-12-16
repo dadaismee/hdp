@@ -34,6 +34,11 @@ def main():
     parser.add_argument("--input-files", nargs="*", help="List of specific input files to process.")
     args = parser.parse_args()
 
+    # Force UTF-8 for Windows console
+    if sys.platform == 'win32':
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+
     log("--- Запуск конвейера обработки документов ---")
     
     # Determine Working Directories
@@ -95,19 +100,27 @@ def main():
             
             # Check for bundled pandoc
             if getattr(sys, 'frozen', False):
-                # If frozen with PyInstaller, look in _MEIxxxx folder or alongside exe
-                mei_pandoc = os.path.join(sys._MEIPASS, 'pandoc.exe')
-                exe_pandoc = os.path.join(os.path.dirname(sys.executable), 'pandoc.exe')
+                # Determine executable name based on OS
+                pandoc_name = "pandoc.exe" if sys.platform == "win32" else "pandoc"
                 
-                if os.path.exists(mei_pandoc):
+                # Look in _MEIxxxx folder (OneFile)
+                if hasattr(sys, '_MEIPASS'):
+                     mei_pandoc = os.path.join(sys._MEIPASS, pandoc_name)
+                else:
+                     mei_pandoc = None
+
+                # Look alongside exe (OneDir or fallback)
+                exe_pandoc = os.path.join(os.path.dirname(sys.executable), pandoc_name)
+                
+                if mei_pandoc and os.path.exists(mei_pandoc):
                     pandoc_path = mei_pandoc
-                    log(f"Используется встроенный Pandoc: {pandoc_path}")
+                    log(f"Используется встроенный Pandoc (OneFile): {pandoc_path}")
                 elif os.path.exists(exe_pandoc):
                     pandoc_path = exe_pandoc
-                    log(f"Используется внешний Pandoc (рядом с exe): {pandoc_path}")
+                    log(f"Используется встроенный Pandoc (OneDir): {pandoc_path}")
                 else:
                     pandoc_path = "pandoc" # Fallback to system path
-                    log("Встроенный Pandoc не найден, попытка использовать системный...")
+                    log(f"Встроенный Pandoc ({pandoc_name}) не найден в {exe_pandoc}, попытка использовать системный...")
             else:
                 pandoc_path = "pandoc"
 

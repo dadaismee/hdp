@@ -8,20 +8,49 @@ from pathlib import Path
 from litellm import completion
 
 # --- CONFIGURATION ---
+# --- CONFIGURATION ---
 # Paths
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if getattr(sys, 'frozen', False):
+    if hasattr(sys, '_MEIPASS'):
+        BASE_DIR = sys._MEIPASS
+    else:
+        BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Note: INPUT_DIR usually needs to be writable, so we should NOT use MEIPASS for that if it's strictly for output. 
+# But this script seems to imply INPUT_DIR is where MD files are provided. 
+# If args are passed, this globals are overridden in main() anyway.
 INPUT_DIR = os.path.join(BASE_DIR, "md")
 JSON_OUTPUT_DIR = os.path.join(INPUT_DIR, "json")
 PROCESSED_MD_DIR = os.path.join(INPUT_DIR, "Processed")
 CONFIG_PATH = os.path.join(BASE_DIR, "config.yml")
 
 def load_config():
+    # Defaults
+    default_config = {
+        "llm_settings": {
+            "provider": "openrouter",
+            "model": "google/gemini-pro-1.5", 
+            "temperature": 0.1,
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key": "" # User must provide key or we sew it in if explicitly asked
+        }
+    }
+    
     try:
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                user_config = yaml.safe_load(f)
+                if user_config:
+                    default_config.update(user_config)
+        else:
+            print(f"Config not found at {CONFIG_PATH}, using defaults.")
+            
     except Exception as e:
         print(f"Warning: Could not load config.yml: {e}")
-        return {}
+    
+    return default_config
 
 
 # Topics List

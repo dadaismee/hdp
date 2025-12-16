@@ -5,8 +5,9 @@ import glob
 import argparse
 
 # --- CONFIGURATION ---
-DEFAULT_JSON_DIR = "/Users/valerii/Documents/Documents/02_responsibilities/22_work/22.1 — катя пащенко — обработка неструктурированных источников /md/json"
-DEFAULT_OUTPUT_FILE = "/Users/valerii/Documents/Documents/02_responsibilities/22_work/22.1 — катя пащенко — обработка неструктурированных источников /md/tufte_timeline.html"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_JSON_DIR = os.path.join(BASE_DIR, "md", "json")
+DEFAULT_OUTPUT_FILE = os.path.join(BASE_DIR, "md", "tufte_timeline.html")
 
 def generate_tufte_html(all_entities, all_events, all_topics, output_path):
     # 1. Prepare Data for Client-Side
