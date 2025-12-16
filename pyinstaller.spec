@@ -5,9 +5,23 @@ block_cipher = None
 import shutil
 import os
 
+from PyInstaller.utils.hooks import collect_all
+
+datas = [
+    ('system_prompt.txt', '.'),
+    ('config.yml', '.')
+]
+binaries = []
+hiddenimports = ['pandas', 'litellm', 'yaml', 'docx', 'bs4', 'tiktoken_ext.openai_public', 'tiktoken_ext']
+
+# Collect all tiktoken resources
+tmp_ret = collect_all('tiktoken')
+datas += tmp_ret[0]
+binaries += tmp_ret[1]
+hiddenimports += tmp_ret[2]
+
 # Helper to find pandoc
 pandoc_path = shutil.which("pandoc")
-binaries = []
 if pandoc_path:
     print(f"Found pandoc at: {pandoc_path}")
     binaries.append((pandoc_path, '.'))
@@ -18,8 +32,8 @@ a = Analysis(
     ['scripts/process_pipeline.py'],
     pathex=[],
     binaries=binaries,
-    datas=[],
-    hiddenimports=['pandas', 'litellm', 'yaml', 'docx', 'bs4'],
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
