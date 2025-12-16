@@ -173,7 +173,7 @@ document.getElementById('cloud-provider').addEventListener('change', (e) => {
     const modelInput = document.getElementById('cloud-model');
 
     if (provider === 'openrouter' && !modelInput.value) {
-        modelInput.value = 'x-ai/grok-4.1-fast:free';
+        modelInput.value = 'google/gemini-2.0-flash-exp:free';
         saveSettings();
     } else if (provider === 'openai' && !modelInput.value) {
         modelInput.value = 'gpt-4o';

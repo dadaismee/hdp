@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import requests
 import glob
 import yaml
@@ -32,7 +33,7 @@ def load_config():
     default_config = {
         "llm_settings": {
             "provider": "openrouter",
-            "model": "google/gemini-pro-1.5", 
+            "model": "google/gemini-2.0-flash-exp:free", 
             "temperature": 0.1,
             "base_url": "https://openrouter.ai/api/v1",
             "api_key": "" # User must provide key or we sew it in if explicitly asked
