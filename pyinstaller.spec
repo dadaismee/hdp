@@ -20,6 +20,12 @@ datas += tmp_ret[0]
 binaries += tmp_ret[1]
 hiddenimports += tmp_ret[2]
 
+# Collect all litellm resources
+tmp_ret_lite = collect_all('litellm')
+datas += tmp_ret_lite[0]
+binaries += tmp_ret_lite[1]
+hiddenimports += tmp_ret_lite[2]
+
 # Helper to find pandoc
 pandoc_path = shutil.which("pandoc")
 if pandoc_path:
