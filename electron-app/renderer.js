@@ -38,15 +38,45 @@ dropZone.addEventListener('drop', (e) => {
         return;
     }
 
+    if (!checkOutputPath()) return;
+
     startProcessing(files);
 });
 
 // Click to browse
 dropZone.addEventListener('click', async () => {
+    if (!checkOutputPath()) return;
+
     const files = await ipcRenderer.invoke('select-files');
     if (files && files.length > 0) {
         startProcessing(files);
     }
+});
+
+function checkOutputPath() {
+    const outputPath = document.getElementById('output-path').value;
+    if (!outputPath || outputPath.trim() === '') {
+        const modal = document.getElementById('path-warning-modal');
+        modal.classList.remove('hidden');
+        return false;
+    }
+    return true;
+}
+
+// Modal Logic
+document.getElementById('go-to-settings-btn').addEventListener('click', () => {
+    document.getElementById('path-warning-modal').classList.add('hidden');
+    // Switch to settings tab (simulate click)
+    const settingsTabBtn = document.querySelector('.nav-btn[data-tab="settings"]');
+    if (settingsTabBtn) settingsTabBtn.click();
+
+    // Highlight input
+    setTimeout(() => {
+        const input = document.getElementById('output-path');
+        input.focus();
+        input.parentElement.style.boxShadow = "0 0 0 4px rgba(0, 113, 227, 0.2)";
+        setTimeout(() => input.parentElement.style.boxShadow = "none", 2000);
+    }, 300);
 });
 
 function startProcessing(files) {
