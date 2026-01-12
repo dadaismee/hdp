@@ -152,6 +152,11 @@ def process_text_with_llm(text, config):
         model_name = model
         api_base = None
 
+    if not llm_settings.get('api_key') and provider != 'ollama':
+        print(f"ОШИБКА: API key не найден для провайдера {provider}.")
+        print("Пожалуйста, укажите ключ в настройках приложения.")
+        return None
+
     print(f"Calling LLM ({model_name})...")
     
     messages = [

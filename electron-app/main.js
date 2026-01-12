@@ -115,7 +115,7 @@ const DEFAULT_SYS_PROMPT = `Ты — историк-архивист. Твоя �
 const DEFAULT_CONFIG = {
     llm_settings: {
         provider: "openrouter",
-        api_key: "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",
+        api_key: "",
         model: "google/gemini-2.0-flash-exp:free"
     }
 };
