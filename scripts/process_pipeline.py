@@ -32,6 +32,8 @@ def main():
     parser = argparse.ArgumentParser(description="Process document pipeline.")
     parser.add_argument("--output-dir", help="Directory to save processed files.")
     parser.add_argument("--input-files", nargs="*", help="List of specific input files to process.")
+    parser.add_argument("--config-path", help="Path to config.yml")
+    parser.add_argument("--system-prompt-path", help="Path to system_prompt.txt")
     args = parser.parse_args()
 
     # Force UTF-8 for Windows console
@@ -153,6 +155,12 @@ def main():
     extract_args = []
     if extract_base_dir:
         extract_args.extend(["--base-dir", extract_base_dir])
+    
+    if args.config_path:
+        extract_args.extend(["--config-path", args.config_path])
+    
+    if args.system_prompt_path:
+         extract_args.extend(["--system-prompt-path", args.system_prompt_path])
         
     try:
         # Import and call directly

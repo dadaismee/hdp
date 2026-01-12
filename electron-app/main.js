@@ -8,12 +8,40 @@ let mainWindow;
 
 // Paths
 const ROOT_DIR = path.resolve(__dirname, '..');
-const CONFIG_PATH = path.join(ROOT_DIR, 'config.yml');
-const SYSTEM_PROMPT_PATH = path.join(ROOT_DIR, 'system_prompt.txt');
+
+// --- USER DATA PATHS (For Persistence & Permissions) ---
+// app.getPath('userData') returns:
+// macOS: ~/Library/Application Support/Konspekt HDP
+// Windows: %APPDATA%/Konspekt HDP
+const USER_DATA_PATH = app.getPath('userData');
+const CONFIG_PATH = path.join(USER_DATA_PATH, 'config.yml');
+const SYSTEM_PROMPT_PATH = path.join(USER_DATA_PATH, 'system_prompt.txt');
+const INPUT_DOCS_DIR = path.join(USER_DATA_PATH, 'input_docs');
+
+// Bundled Paths (Read-only source for defaults)
+const BUNDLED_CONFIG = path.join(ROOT_DIR, 'config.yml');
+const BUNDLED_PROMPT = path.join(ROOT_DIR, 'system_prompt.txt');
 const PROCESS_SCRIPT = path.join(ROOT_DIR, 'scripts', 'process_pipeline.py');
 const VIZ_HTML = path.join(ROOT_DIR, 'md', 'tufte_timeline.html');
 
+// Helper: Ensure config exists in UserData
+function initUserData() {
+    if (!fs.existsSync(USER_DATA_PATH)) {
+        fs.mkdirSync(USER_DATA_PATH, { recursive: true });
+    }
+
+    if (!fs.existsSync(CONFIG_PATH) && fs.existsSync(BUNDLED_CONFIG)) {
+        fs.copyFileSync(BUNDLED_CONFIG, CONFIG_PATH);
+    }
+
+    if (!fs.existsSync(SYSTEM_PROMPT_PATH) && fs.existsSync(BUNDLED_PROMPT)) {
+        fs.copyFileSync(BUNDLED_PROMPT, SYSTEM_PROMPT_PATH);
+    }
+}
+
 function createWindow() {
+    initUserData(); // Ensure files exist
+
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -151,13 +179,12 @@ ipcMain.handle('save-prompt', async (event, content) => {
 // 4. Run Process Pipeline
 ipcMain.on('run-process', (event, filePaths) => {
     // 1. Copy files to input_docs
-    const inputDir = path.join(ROOT_DIR, 'input_docs');
-    if (!fs.existsSync(inputDir)) fs.mkdirSync(inputDir, { recursive: true });
+    if (!fs.existsSync(INPUT_DOCS_DIR)) fs.mkdirSync(INPUT_DOCS_DIR, { recursive: true });
 
     let copiedCount = 0;
     filePaths.forEach(filePath => {
         if (filePath.endsWith('.docx')) {
-            const dest = path.join(inputDir, path.basename(filePath));
+            const dest = path.join(INPUT_DOCS_DIR, path.basename(filePath));
             fs.copyFileSync(filePath, dest);
             copiedCount++;
         }
@@ -181,6 +208,10 @@ ipcMain.on('run-process', (event, filePaths) => {
     } catch (e) { console.error("Config read error", e); }
 
     const args = [PROCESS_SCRIPT];
+
+    // Pass Config and Prompt Paths
+    args.push('--config-path', CONFIG_PATH);
+    args.push('--system-prompt-path', SYSTEM_PROMPT_PATH);
 
     if (outputPath) {
         args.push('--output-dir', outputPath);

@@ -26,9 +26,13 @@ else:
 INPUT_DIR = os.path.join(BASE_DIR, "md")
 JSON_OUTPUT_DIR = os.path.join(INPUT_DIR, "json")
 PROCESSED_MD_DIR = os.path.join(INPUT_DIR, "Processed")
-CONFIG_PATH = os.path.join(BASE_DIR, "config.yml")
+# Defaults for global access if needed, but better to pass around
+DEFAULT_CONFIG_PATH = os.path.join(BASE_DIR, "config.yml")
+DEFAULT_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
-def load_config():
+def load_config(config_path=None):
+    use_path = config_path if config_path else DEFAULT_CONFIG_PATH
+    
     # Defaults
     default_config = {
         "llm_settings": {
@@ -36,18 +40,18 @@ def load_config():
             "model": "google/gemini-2.0-flash-exp:free", 
             "temperature": 0.1,
             "base_url": "https://openrouter.ai/api/v1",
-            "api_key": "" # User must provide key or we sew it in if explicitly asked
+            "api_key": ""
         }
     }
     
     try:
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+        if os.path.exists(use_path):
+            with open(use_path, 'r', encoding='utf-8') as f:
                 user_config = yaml.safe_load(f)
                 if user_config:
                     default_config.update(user_config)
         else:
-            print(f"Config not found at {CONFIG_PATH}, using defaults.")
+            print(f"Config not found at {use_path}, using defaults.")
             
     except Exception as e:
         print(f"Warning: Could not load config.yml: {e}")
@@ -77,16 +81,14 @@ TOPICS_LIST = [
     "Приходской совет состав"
 ]
 
-# Updated System Prompt based on "Ideal Prompt for Critical Analysis"
-# Load System Prompt
-SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
-
-def load_system_prompt():
-    if os.path.exists(SYSTEM_PROMPT_PATH):
-        with open(SYSTEM_PROMPT_PATH, 'r', encoding='utf-8') as f:
+def load_system_prompt(prompt_path=None):
+    use_path = prompt_path if prompt_path else DEFAULT_PROMPT_PATH
+    
+    if os.path.exists(use_path):
+        with open(use_path, 'r', encoding='utf-8') as f:
             return f.read()
     else:
-        print("Warning: system_prompt.txt not found. Using default.")
+        print(f"Warning: system_prompt.txt not found at {use_path}. Using default.")
         return """Ты — историк-архивист. Твоя задача — провести комплексный критический анализ исторического источника и извлечь из него структурированные данные.
 
 1. ВЕРНИ ОТВЕТ В ФОРМАТЕ JSON.
@@ -121,6 +123,9 @@ def load_system_prompt():
 }}
 """
 
+# Global variable will be initialized in main or via explicit call if needed, 
+# but process_text_with_llm uses it. 
+# We'll reload it in main if path is provided.
 SYSTEM_PROMPT = load_system_prompt()
 
 def normalize_name(name):
@@ -337,12 +342,21 @@ def save_processed_md(original_content, data, filename, output_dir):
 def main(args_list=None):
     parser = argparse.ArgumentParser(description="Extract data from Markdown files using LLM.")
     parser.add_argument("--base-dir", help="Base directory for input/output files. If provided, overrides default paths.")
+    parser.add_argument("--config-path", help="Path to config.yml")
+    parser.add_argument("--system-prompt-path", help="Path to system_prompt.txt")
     
     if args_list:
         args = parser.parse_args(args_list)
     else:
         args = parser.parse_args()
 
+    # Reload Globals with args if provided
+    global SYSTEM_PROMPT
+    if args.system_prompt_path:
+        SYSTEM_PROMPT = load_system_prompt(args.system_prompt_path)
+    
+    config_path = args.config_path
+    
     if args.base_dir:
         # Custom paths
         input_dir = args.base_dir
@@ -365,7 +379,7 @@ def main(args_list=None):
     
     print(f"Найдено {len(files)} markdown файлов в {input_dir}")
 
-    config = load_config()
+    config = load_config(config_path)
 
     for file_path in files:
         filename = os.path.basename(file_path)
