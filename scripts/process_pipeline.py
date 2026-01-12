@@ -55,7 +55,14 @@ def main():
             log(f"Копирование {len(args.input_files)} файлов в {working_dir}...")
             for f in args.input_files:
                 if os.path.exists(f):
-                    shutil.copy2(f, working_dir)
+                    # Check if source and destination are the same
+                    src = os.path.abspath(f)
+                    dst = os.path.abspath(os.path.join(working_dir, os.path.basename(f)))
+                    
+                    if src != dst:
+                        shutil.copy2(f, working_dir)
+                    else:
+                        log(f"Файл уже в целевой папке, копирование не требуется: {f}")
                 else:
                     log(f"Внимание: Файл не найден: {f}")
         
