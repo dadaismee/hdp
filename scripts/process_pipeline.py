@@ -21,12 +21,42 @@ def log(message):
     print(f"[{time.strftime('%H:%M:%S')}] {message}")
     sys.stdout.flush()
 
-def run_command(command):
+def run_command(command, check=True):
     try:
-        subprocess.check_call(command)
+        # On Windows, we need shell=True sometimes if we rely on PATH lookup for 'pandoc'
+        # But here we often provide full path. 
+        # If shell=True, arguments might need quoting. subprocess.check_call handles list args well without shell=True usually.
+        # However, for debugging connection issues, capture_output is better.
+        subprocess.run(command, check=check, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         log(f"Ошибка при выполнении команды: {e}")
-        pass
+        log(f"STDERR: {e.stderr}")
+        log(f"STDOUT: {e.stdout}")
+        # Re-raise if check was requested so we know it failed
+        if check:
+            raise e
+    except FileNotFoundError:
+        log(f"CRITICAL: Executable not found. Command: {command}")
+        if check:
+            raise
+    except OSError as e:
+        log(f"CRITICAL: OSError executing command {command}: {e}")
+        if check:
+            raise
+
+def verify_pandoc(pandoc_path):
+    log(f"Проверка Pandoc по пути: {pandoc_path}")
+    if not os.path.exists(pandoc_path) and shutil.which(pandoc_path) is None:
+         log(f"ОШИБКА: Файл pandoc не найден по пути: {pandoc_path}")
+         return False
+         
+    try:
+        run_command([pandoc_path, "--version"])
+        log(f"Pandoc успешно запущен.")
+        return True
+    except Exception as e:
+        log(f"ОШИБКА: Не удалось запустить pandoc: {e}")
+        return False
 
 def main():
     parser = argparse.ArgumentParser(description="Process document pipeline.")
@@ -93,6 +123,36 @@ def main():
         est_time = len(docx_files) * 2
         log(f"Найдено {len(docx_files)} файлов. Конвертация в Markdown... (Оценка: ~{est_time} сек)")
         
+        # Detect Pandoc once
+        if getattr(sys, 'frozen', False):
+            # Determine executable name based on OS
+            pandoc_name = "pandoc.exe" if sys.platform == "win32" else "pandoc"
+            
+            # Look in _MEIxxxx folder (OneFile)
+            if hasattr(sys, '_MEIPASS'):
+                    mei_pandoc = os.path.join(sys._MEIPASS, pandoc_name)
+            else:
+                    mei_pandoc = None
+
+            # Look alongside exe (OneDir or fallback)
+            exe_pandoc = os.path.join(os.path.dirname(sys.executable), pandoc_name)
+            
+            if mei_pandoc and os.path.exists(mei_pandoc):
+                pandoc_path = mei_pandoc
+                log(f"Используется встроенный Pandoc (OneFile): {pandoc_path}")
+            elif os.path.exists(exe_pandoc):
+                pandoc_path = exe_pandoc
+                log(f"Используется встроенный Pandoc (OneDir): {pandoc_path}")
+            else:
+                pandoc_path = "pandoc" # Fallback to system path
+                log(f"Встроенный Pandoc ({pandoc_name}) не найден в {exe_pandoc}, попытка использовать системный...")
+        else:
+            pandoc_path = "pandoc"
+
+        # Pre-flight check
+        if not verify_pandoc(pandoc_path):
+            log("ВНИМАНИЕ: Проверка Pandoc не удалась. Возможно, конвертация не сработает.")
+
         for i, docx_path in enumerate(docx_files):
             filename = os.path.basename(docx_path)
             name_no_ext = os.path.splitext(filename)[0]
@@ -107,34 +167,16 @@ def main():
             
             log(f"[{i+1}/{len(docx_files)}] Конвертация {filename}...")
             
-            # Check for bundled pandoc
-            if getattr(sys, 'frozen', False):
-                # Determine executable name based on OS
-                pandoc_name = "pandoc.exe" if sys.platform == "win32" else "pandoc"
-                
-                # Look in _MEIxxxx folder (OneFile)
-                if hasattr(sys, '_MEIPASS'):
-                     mei_pandoc = os.path.join(sys._MEIPASS, pandoc_name)
-                else:
-                     mei_pandoc = None
-
-                # Look alongside exe (OneDir or fallback)
-                exe_pandoc = os.path.join(os.path.dirname(sys.executable), pandoc_name)
-                
-                if mei_pandoc and os.path.exists(mei_pandoc):
-                    pandoc_path = mei_pandoc
-                    log(f"Используется встроенный Pandoc (OneFile): {pandoc_path}")
-                elif os.path.exists(exe_pandoc):
-                    pandoc_path = exe_pandoc
-                    log(f"Используется встроенный Pandoc (OneDir): {pandoc_path}")
-                else:
-                    pandoc_path = "pandoc" # Fallback to system path
-                    log(f"Встроенный Pandoc ({pandoc_name}) не найден в {exe_pandoc}, попытка использовать системный...")
-            else:
-                pandoc_path = "pandoc"
+            # Pre-flight check for the first file or just rely on run_command error
+            # Let's do a robust check once if we haven't checked for this conversion session?
+            # Or just let run_command fail. With improved run_command, we get better logs.
 
             cmd = [pandoc_path, docx_path, "-f", "docx", "-t", "markdown", "--wrap=none", "-o", md_path]
-            run_command(cmd)
+            
+            try:
+                run_command(cmd)
+            except Exception:
+                log(f"Не удалось конвертировать {filename}.")
 
     # 2. Extract Data
     # Estimate time: ~30 sec per file for LLM
