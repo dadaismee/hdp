@@ -27,12 +27,13 @@ binaries += tmp_ret_lite[1]
 hiddenimports += tmp_ret_lite[2]
 
 # Helper to find pandoc
+# Helper to find pandoc
 pandoc_path = shutil.which("pandoc")
 if pandoc_path:
     print(f"Found pandoc at: {pandoc_path}")
     binaries.append((pandoc_path, '.'))
 else:
-    print("WARNING: Pandoc not found!")
+    raise FileNotFoundError("CRITICAL: Pandoc not found in build environment! Install Pandoc strictly before building.")
 
 a = Analysis(
     ['scripts/process_pipeline.py'],

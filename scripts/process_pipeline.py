@@ -137,6 +137,7 @@ def main():
             # Look alongside exe (OneDir or fallback)
             exe_pandoc = os.path.join(os.path.dirname(sys.executable), pandoc_name)
             
+            # Try to find exactly where it is. OneDir puts it in root usually.
             if mei_pandoc and os.path.exists(mei_pandoc):
                 pandoc_path = mei_pandoc
                 log(f"Используется встроенный Pandoc (OneFile): {pandoc_path}")
@@ -144,8 +145,35 @@ def main():
                 pandoc_path = exe_pandoc
                 log(f"Используется встроенный Pandoc (OneDir): {pandoc_path}")
             else:
-                pandoc_path = "pandoc" # Fallback to system path
-                log(f"Встроенный Pandoc ({pandoc_name}) не найден в {exe_pandoc}, попытка использовать системный...")
+                # DEEP SEARCH: Scan the directory
+                log("Стандартные пути не сработали. Поиск pandoc внутри сборки...")
+                search_roots = []
+                if hasattr(sys, '_MEIPASS'): search_roots.append(sys._MEIPASS)
+                search_roots.append(os.path.dirname(sys.executable))
+                
+                found_path = None
+                for root in search_roots:
+                    for r, d, f in os.walk(root):
+                        for file in f:
+                            if file.lower() == pandoc_name.lower():
+                                found_path = os.path.join(r, file)
+                                break
+                        if found_path: break
+                    if found_path: break
+                
+                if found_path:
+                    pandoc_path = found_path
+                    log(f"Найден Pandoc (Deep Search): {pandoc_path}")
+                else:
+                    log(f"CRITICAL ERROR: Bundled Pandoc not found in {search_roots}")
+                    # Debug: List root dir
+                    try:
+                         log(f"Содержимое корня сборки: {os.listdir(os.path.dirname(sys.executable))}")
+                    except: pass
+                    log("Приложение повреждено: pandoc не найден внутри сборки. Проверьте pyinstaller.spec.")
+                    # Keep strict exit as user implies "use internal", and if we can't find it, we can't use it.
+                    # But failing clearly is better than random system path error.
+                    sys.exit(1)
         else:
             pandoc_path = "pandoc"
 
