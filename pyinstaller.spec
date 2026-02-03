@@ -28,12 +28,56 @@ hiddenimports += tmp_ret_lite[2]
 
 # Helper to find pandoc
 # Helper to find pandoc
-pandoc_path = shutil.which("pandoc")
+# Helper to find pandoc
+pandoc_path = None
+
+# 1. Try resolving via shutil.which
+which_path = shutil.which("pandoc")
+
+# 2. Define heuristic for "real" binary (size > 1MB)
+def is_real_pandoc(path):
+    if not path or not os.path.exists(path):
+        return False
+    # Pandoc is usually ~50-100MB. Shims are ~10-20KB.
+    # Let's set a safe threshold of 5MB.
+    try:
+        size_mb = os.path.getsize(path) / (1024 * 1024)
+        print(f"Checking {path}: {size_mb:.2f} MB")
+        return size_mb > 5
+    except OSError:
+        return False
+
+# 3. Known locations on Windows (Chocolatey/Standard)
+known_paths = [
+    r"C:\Program Files\Pandoc\pandoc.exe",
+    r"C:\Program Files (x86)\Pandoc\pandoc.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Pandoc\pandoc.exe"),
+    os.path.expandvars(r"%ProgramData%\chocolatey\lib\pandoc\tools\pandoc.exe"),
+    os.path.expandvars(r"%ProgramData%\chocolatey\bin\pandoc.exe"), # Might be shim
+]
+
+# Check which_path first, if it fails size check, look in known_paths
+candidates = []
+if which_path: candidates.append(which_path)
+candidates.extend(known_paths)
+
+found = False
+for path in candidates:
+    if is_real_pandoc(path):
+        pandoc_path = path
+        found = True
+        break
+    else:
+        # If it's a shim, maybe we can resolve it? 
+        # But usually standard paths are better.
+        pass
+
 if pandoc_path:
-    print(f"Found pandoc at: {pandoc_path}")
+    print(f"Found REAL pandoc at: {pandoc_path}")
     binaries.append((pandoc_path, '.'))
 else:
-    raise FileNotFoundError("CRITICAL: Pandoc not found in build environment! Install Pandoc strictly before building.")
+    print(f"Candidates checked: {candidates}")
+    raise FileNotFoundError("CRITICAL: Real Pandoc binary (size > 5MB) not found! Ensure Pandoc is installed properly.")
 
 a = Analysis(
     ['scripts/process_pipeline.py'],
