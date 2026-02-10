@@ -1,5 +1,5 @@
 llm_settings:
   provider: openrouter
   api_key: ""
-  model: google/gemini-flash-1.5
+  model: google/gemini-2.0-pro-exp-02-05:free
 output_path: /Users/valerii/Obsidian
