@@ -37,7 +37,7 @@ def load_config(config_path=None):
     default_config = {
         "llm_settings": {
             "provider": "openrouter",
-            "model": "google/gemini-2.0-flash-exp:free", 
+            "model": "openrouter/free", 
             "temperature": 0.1,
             "base_url": "https://openrouter.ai/api/v1",
             "api_key": ""
