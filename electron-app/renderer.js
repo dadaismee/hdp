@@ -132,6 +132,16 @@ async function loadConfig() {
             document.getElementById('cloud-model').value = config.llm_settings.model || '';
         }
     }
+
+    if (config.output_path) {
+        document.getElementById('output-path').value = config.output_path;
+    }
+    if (config.llm_settings) {
+        const tempEls = [document.getElementById('temperature'), document.getElementById('temperature-local')];
+        tempEls.forEach(el => { if (el) el.value = config.llm_settings.temperature || 0.1; });
+        const timeoutEls = [document.getElementById('timeout'), document.getElementById('timeout-local')];
+        timeoutEls.forEach(el => { if (el) el.value = config.llm_settings.timeout || 600; });
+    }
 }
 
 // Toggle Mode
@@ -210,24 +220,34 @@ const saveSettings = async () => {
         llm_settings: {}
     };
 
+    const temperature = parseFloat(
+        (document.getElementById('temperature') || document.getElementById('temperature-local')).value
+    ) || 0.1;
+    const timeout = parseInt(
+        (document.getElementById('timeout') || document.getElementById('timeout-local')).value
+    ) || 600;
+
     if (currentMode === 'cloud') {
         newConfig.llm_settings = {
             provider: document.getElementById('cloud-provider').value,
             api_key: document.getElementById('api-key').value,
-            model: document.getElementById('cloud-model').value
+            model: document.getElementById('cloud-model').value,
+            temperature,
+            timeout
         };
     } else {
         newConfig.llm_settings = {
             provider: 'ollama',
             model: document.getElementById('local-model-select').value,
-            api_base: 'http://localhost:11434'
+            api_base: 'http://localhost:11434',
+            temperature,
+            timeout
         };
     }
 
     const res = await ipcRenderer.invoke('save-config', newConfig);
     if (res.success) {
-        // Optional: show subtle indicator instead of toast for every keystroke
-        // showToast("Saved"); 
+        showToast("Настройки сохранены");
     } else {
         console.error("Error saving settings:", res.error);
     }
@@ -253,6 +273,10 @@ document.getElementById('cloud-provider').addEventListener('change', saveSetting
 document.getElementById('api-key').addEventListener('input', debouncedSave);
 document.getElementById('cloud-model').addEventListener('input', debouncedSave);
 document.getElementById('local-model-select').addEventListener('change', saveSettings);
+document.getElementById('temperature').addEventListener('change', saveSettings);
+document.getElementById('temperature-local').addEventListener('change', saveSettings);
+document.getElementById('timeout').addEventListener('change', saveSettings);
+document.getElementById('timeout-local').addEventListener('change', saveSettings);
 
 // Select Folder
 document.getElementById('select-folder-btn').addEventListener('click', async () => {

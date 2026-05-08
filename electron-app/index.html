@@ -101,6 +101,16 @@
                         <label>Модель</label>
                         <input type="text" id="cloud-model" placeholder="gpt-4o, claude-3-5-sonnet...">
                     </div>
+                    <div class="setting-group row-group">
+                        <div class="setting-field">
+                            <label>Temperature</label>
+                            <input type="number" id="temperature" value="0.1" step="0.05" min="0" max="2" placeholder="0.1">
+                        </div>
+                        <div class="setting-field">
+                            <label>Timeout (сек)</label>
+                            <input type="number" id="timeout" value="600" step="30" min="30" placeholder="600">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Local Settings -->
@@ -116,6 +126,16 @@
                         <div id="ollama-warning" class="warning-box hidden">
                             Ollama не найдена. <button class="link-btn" onclick="openUrl('https://ollama.com')">Скачать
                                 Ollama</button>
+                        </div>
+                    </div>
+                    <div class="setting-group row-group">
+                        <div class="setting-field">
+                            <label>Temperature</label>
+                            <input type="number" id="temperature-local" value="0.1" step="0.05" min="0" max="2" placeholder="0.1">
+                        </div>
+                        <div class="setting-field">
+                            <label>Timeout (сек)</label>
+                            <input type="number" id="timeout-local" value="600" step="30" min="30" placeholder="600">
                         </div>
                     </div>
                 </div>

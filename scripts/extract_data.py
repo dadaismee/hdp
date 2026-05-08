@@ -9,6 +9,14 @@ import argparse
 from pathlib import Path
 from litellm import completion
 
+# Windows SSL fix: use certifi certificate bundle
+try:
+    import certifi
+    os.environ.setdefault('SSL_CERT_FILE', certifi.where())
+    os.environ.setdefault('REQUESTS_CA_BUNDLE', certifi.where())
+except ImportError:
+    pass
+
 # --- CONFIGURATION ---
 # --- CONFIGURATION ---
 # Paths
@@ -37,8 +45,9 @@ def load_config(config_path=None):
     default_config = {
         "llm_settings": {
             "provider": "openrouter",
-            "model": "openrouter/free", 
+            "model": "openrouter/free",
             "temperature": 0.1,
+            "timeout": 600,
             "base_url": "https://openrouter.ai/api/v1",
             "api_key": ""
         }
@@ -49,7 +58,11 @@ def load_config(config_path=None):
             with open(use_path, 'r', encoding='utf-8') as f:
                 user_config = yaml.safe_load(f)
                 if user_config:
-                    default_config.update(user_config)
+                    if 'llm_settings' in user_config:
+                        default_config['llm_settings'].update(user_config['llm_settings'])
+                    for k, v in user_config.items():
+                        if k != 'llm_settings':
+                            default_config[k] = v
         else:
             print(f"Config not found at {use_path}, using defaults.")
             
@@ -219,97 +232,6 @@ def process_text_with_llm(text, config):
                 print("Не удалось получить ответ от LLM после всех попыток.")
                 return None
 
-def format_obsidian_link(name):
-    return f"[[{name}]]"
-
-def save_json(data, filename):
-    path = os.path.join(JSON_OUTPUT_DIR, filename)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2) # Save full data
-    print(f"Saved JSON: {path}")
-
-def save_processed_md(original_content, full_data, filename):
-    path = os.path.join(PROCESSED_MD_DIR, filename)
-    meta = full_data['metadata']
-    analysis_text = full_data.get('analysis', '')
-    
-    # Generate ID from filename (remove extension)
-    doc_id = os.path.splitext(filename)[0]
-    if doc_id.endswith('.md') or doc_id.endswith('.docx') or doc_id.endswith('.rtf'): # Handle double extensions if any
-         doc_id = os.path.splitext(doc_id)[0]
-
-    # Collect mentions
-    all_mentions = set()
-    if meta.get('author'): all_mentions.add(meta['author'])
-    if meta.get('location'): all_mentions.add(meta['location'])
-    for ent in meta.get('entities', []): all_mentions.add(ent['name'])
-    for rel in meta.get('relationships', []):
-        all_mentions.add(rel['target'])
-        all_mentions.add(rel['source'])
-
-    yaml = "---\n"
-    yaml += f"id: {doc_id}\n"
-    yaml += f"title: \"{meta.get('title', doc_id)}\"\n"
-    # Parse date for Dataview compatibility
-    raw_date = meta.get('date', '')
-    clean_date = ''
-    begin_date = ''
-    end_date = ''
-    
-    if raw_date:
-        # Try to find the first YYYY-MM-DD pattern
-        import re
-        date_matches = re.findall(r'\d{4}-\d{2}-\d{2}', raw_date)
-        if date_matches:
-            clean_date = date_matches[0] # Use first date for sorting
-            begin_date = date_matches[0]
-            end_date = date_matches[-1] # Use last date for end
-        else:
-            # Fallback if no strict format found, just use raw string but it might break dataview sorting
-            pass
-
-    yaml += f"date: {clean_date}\n" # Standard field for Dataview
-    yaml += f"begin: {begin_date}\n"
-    yaml += f"end: {end_date}\n"
-    # Type in YAML should probably be a string for Cosma, or [[Type]] for Obsidian? 
-    # User wants Cosma graph. Cosma usually likes simple strings or lists.
-    # But Obsidian needs [[Type]] to link to Type node.
-    # Let's use [[Type]] for type as it acts as a tag/category often.
-    yaml += f"type: {format_obsidian_link(meta.get('type', 'Doc'))}\n"
-    
-    yaml += f"location: {format_obsidian_link(meta.get('location', ''))}\n"
-    yaml += f"summary: \"{meta.get('summary', '')}\"\n"
-    
-    # Topics
-    if meta.get('topics'):
-        yaml += "topics:\n"
-        for topic in meta['topics']:
-            yaml += f"  - \"{topic}\"\n"
-
-    # Obsidian Typed Relationships (Extended Graph) - Translated to Russian
-    # Mapping from English types to Russian
-    rel_map = {
-        "wrote_to": "написал",
-        "conflict_with": "конфликт",
-        "met_with": "встреча",
-        "appointed": "назначил",
-        "subordinate_to": "подчинение",
-        "mentions": "упоминает",
-        "elected_to": "избран",
-        "member_of": "членство"
-    }
-
-    rels_by_type = {}
-    for rel in meta.get('relationships', []):
-        rtype = rel['type']
-        target = rel['target']
-        
-        # Translate type if possible
-        if rtype in rel_map:
-            rtype = rel_map[rtype]
-            
-        if rtype == 'type': rtype = 'rel_type' # Avoid conflict with 'type' field
-        
 def save_json(data, filename, output_dir):
     path = os.path.join(output_dir, filename)
     with open(path, 'w', encoding='utf-8') as f:

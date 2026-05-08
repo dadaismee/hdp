@@ -4,6 +4,26 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const { spawn, exec } = require('child_process');
 
+// Load .env from project root (gitignored, for local dev / local production builds)
+function loadDotEnv() {
+    const envPath = path.join(__dirname, '..', '.env');
+    if (!fs.existsSync(envPath)) return {};
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n').filter(Boolean);
+    const env = {};
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim();
+        env[key] = val;
+    }
+    return env;
+}
+
+const DOT_ENV = loadDotEnv();
+
 let mainWindow;
 
 // Paths
@@ -31,7 +51,25 @@ function initUserData() {
     }
 
     if (!fs.existsSync(CONFIG_PATH) && fs.existsSync(BUNDLED_CONFIG)) {
-        fs.copyFileSync(BUNDLED_CONFIG, CONFIG_PATH);
+        // Copy bundled config as template
+        const bundledRaw = fs.readFileSync(BUNDLED_CONFIG, 'utf8');
+        let configData = yaml.load(bundledRaw) || {};
+
+        // Seed API key from .env (local builds) or from bundled config (CI/CD builds)
+        if (DOT_ENV.OPENROUTER_API_KEY) {
+            if (!configData.llm_settings) configData.llm_settings = {};
+            configData.llm_settings.api_key = DOT_ENV.OPENROUTER_API_KEY;
+        }
+
+        // Ensure defaults for all fields
+        if (!configData.llm_settings) configData.llm_settings = {};
+        if (!configData.llm_settings.provider) configData.llm_settings.provider = 'openrouter';
+        if (!configData.llm_settings.temperature) configData.llm_settings.temperature = 0.1;
+        if (!configData.llm_settings.timeout) configData.llm_settings.timeout = 600;
+        if (!configData.llm_settings.base_url) configData.llm_settings.base_url = 'https://openrouter.ai/api/v1';
+        if (!configData.output_path) configData.output_path = '';
+
+        fs.writeFileSync(CONFIG_PATH, yaml.dump(configData), 'utf8');
     }
 
     if (!fs.existsSync(SYSTEM_PROMPT_PATH) && fs.existsSync(BUNDLED_PROMPT)) {
@@ -115,9 +153,13 @@ const DEFAULT_SYS_PROMPT = `Ты — историк-архивист. Твоя �
 const DEFAULT_CONFIG = {
     llm_settings: {
         provider: "openrouter",
-        api_key: "",
-        model: "google/gemini-2.0-flash-exp:free"
-    }
+        api_key: DOT_ENV.OPENROUTER_API_KEY || "",
+        model: "google/gemini-2.0-flash-exp:free",
+        temperature: 0.1,
+        timeout: 600,
+        base_url: "https://openrouter.ai/api/v1"
+    },
+    output_path: ""
 };
 
 // 2. Get/Save Config
@@ -234,8 +276,8 @@ ipcMain.on('run-process', (event, filePaths) => {
             // Remove the first argument (script path) because the executable IS the script
             cmdArgs = args.slice(1);
         } else {
-            // In dev, use python3
-            cmd = 'python3';
+            // In dev, use python (or python3 on macOS/Linux)
+            cmd = process.platform === 'win32' ? 'python' : 'python3';
             cmdArgs = args; // args includes the script path as first arg
         }
 

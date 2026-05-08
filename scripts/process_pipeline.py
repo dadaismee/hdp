@@ -6,6 +6,7 @@ import traceback
 import time
 import argparse
 import shutil
+import webbrowser
 
 # Paths relative to this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -274,7 +275,7 @@ def main():
         
     log(f"\n--- Готово! Открываю {os.path.basename(target_html)} ---")
     if os.path.exists(target_html):
-        subprocess.call(["open", target_html])
+        webbrowser.open(target_html)
     else:
         log(f"Файл визуализации не найден: {target_html}")
 

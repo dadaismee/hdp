@@ -12,7 +12,7 @@ datas = [
     ('config.yml', '.')
 ]
 binaries = []
-hiddenimports = ['pandas', 'litellm', 'yaml', 'docx', 'bs4', 'tiktoken_ext.openai_public', 'tiktoken_ext']
+hiddenimports = ['pandas', 'litellm', 'yaml', 'docx', 'bs4', 'tiktoken_ext.openai_public', 'tiktoken_ext', 'certifi']
 
 # Collect all tiktoken resources
 tmp_ret = collect_all('tiktoken')
@@ -25,6 +25,12 @@ tmp_ret_lite = collect_all('litellm')
 datas += tmp_ret_lite[0]
 binaries += tmp_ret_lite[1]
 hiddenimports += tmp_ret_lite[2]
+
+# Collect all certifi resources (SSL cert bundle for Windows)
+tmp_ret_cert = collect_all('certifi')
+datas += tmp_ret_cert[0]
+binaries += tmp_ret_cert[1]
+hiddenimports += tmp_ret_cert[2]
 
 # Helper to find pandoc
 # Helper to find pandoc
