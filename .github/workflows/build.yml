@@ -81,6 +81,8 @@ jobs:
 
     - name: Test Pipeline (CI)
       continue-on-error: true
+      env:
+        PYTHONIOENCODING: utf-8
       run: |
         python scripts/test_pipeline.py
 
