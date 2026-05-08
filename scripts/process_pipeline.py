@@ -28,7 +28,7 @@ def run_command(command, check=True):
         # But here we often provide full path. 
         # If shell=True, arguments might need quoting. subprocess.check_call handles list args well without shell=True usually.
         # However, for debugging connection issues, capture_output is better.
-        subprocess.run(command, check=check, capture_output=True, text=True)
+        subprocess.run(command, check=check, capture_output=True, text=True, encoding='utf-8', errors='replace')
     except subprocess.CalledProcessError as e:
         log(f"Ошибка при выполнении команды: {e}")
         log(f"STDERR: {e.stderr}")

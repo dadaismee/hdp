@@ -79,7 +79,8 @@ def run_pipeline():
     cmd.extend(["--input-files", DOCX_PATH])
 
     log(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    # Use UTF-8 on all platforms to avoid cp1252 decode errors on Windows
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300)
 
     stdout = result.stdout or ""
     stderr = result.stderr or ""
