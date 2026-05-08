@@ -79,6 +79,11 @@ jobs:
       run: |
         pyinstaller pyinstaller.spec
 
+    - name: Test Pipeline (CI)
+      continue-on-error: true
+      run: |
+        python scripts/test_pipeline.py
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
