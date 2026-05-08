@@ -3,6 +3,11 @@ import os
 import sys
 import glob
 import time
+
+# Force UTF-8 on Windows to avoid cp1252 encode/decode errors
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
 import tempfile
 import subprocess
 import shutil
