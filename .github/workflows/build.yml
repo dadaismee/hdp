@@ -57,15 +57,15 @@ jobs:
         API_KEY: ${{ github.event.inputs.api_key || secrets.API_KEY }}
       if: env.API_KEY != ''
       run: |
-        python -c "
-import yaml, os
-with open('config.yml', 'r') as f:
-    cfg = yaml.safe_load(f)
-cfg['llm_settings']['api_key'] = os.environ['API_KEY']
-with open('config.yml', 'w') as f:
-    yaml.dump(cfg, f)
-print('API key injected into config.yml')
-"
+        python << 'PYEOF'
+        import yaml, os
+        with open('config.yml', 'r') as f:
+            cfg = yaml.safe_load(f)
+        cfg['llm_settings']['api_key'] = os.environ['API_KEY']
+        with open('config.yml', 'w') as f:
+            yaml.dump(cfg, f)
+        print('API key injected into config.yml')
+        PYEOF
 
     - name: Install Pandoc (Windows)
       if: runner.os == 'Windows'
