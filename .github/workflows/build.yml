@@ -55,22 +55,20 @@ jobs:
     - name: Inject API key into config
       env:
         API_KEY: ${{ github.event.inputs.api_key || secrets.API_KEY }}
+      shell: bash
       run: |
-        if [ -z "$API_KEY" ]; then
-          echo "No API_KEY env var — skipping injection"
-          exit 0
-        fi
         python << 'PYEOF'
         import yaml, os
         key = os.environ.get('API_KEY', '')
         if not key:
-            exit(0)
-        with open('config.yml', 'r') as f:
-            cfg = yaml.safe_load(f)
-        cfg['llm_settings']['api_key'] = key
-        with open('config.yml', 'w') as f:
-            yaml.dump(cfg, f)
-        print('API key injected into config.yml')
+            print('No API_KEY env var — skipping injection')
+        else:
+            with open('config.yml', 'r') as f:
+                cfg = yaml.safe_load(f)
+            cfg.setdefault('llm_settings', {})['api_key'] = key
+            with open('config.yml', 'w') as f:
+                yaml.dump(cfg, f, allow_unicode=True)
+            print('API key injected into config.yml')
         PYEOF
 
     - name: Install Pandoc (Windows)
