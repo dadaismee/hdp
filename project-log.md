@@ -19,23 +19,24 @@
 - **Windows Unicode fix**: `encoding='utf-8', errors='replace'` in `subprocess.run` + `sys.stdout.reconfigure(encoding='utf-8')` + `PYTHONIOENCODING=utf-8` + `PYTHONUTF8=1`
 - **CI test step** (`scripts/test_pipeline.py`): creates test .docx, runs pipeline, validates md/json/html outputs
 - **CI inject step fix**: `shell: bash` for cross-platform heredoc (step-level `env` not accessible in `if:` condition)
+- **Refactored API key to single source**: removed `api_key` from `config.yml` — key lives only in `.env` (local) or env var `OPENROUTER_API_KEY` (CI/GitHub Secret). `extract_data.py` reads env var, falls back to `.env` via `python-dotenv`. CI creates `.env` from secret + PyInstaller bundles it. `main.js` passes key via spawn env.
 
 ### Current State
 
 - **macOS build**: ✅ ALL CHECKS PASSED
 - **Windows build**: ✅ ALL CHECKS PASSED (after Unicode fixes)
-- **API key injection in CI**: ❌ `API_KEY` GitHub Secret not set in repo (`gh secret list` returns empty)
-- **LLM extraction in CI**: SKIPPED — `API key не найден для провайдера openrouter`
+- **API key in CI**: ⏳ Нужно установить `API_KEY` GitHub Secret. После этого CI создаст `.env` из секрета → PyInstaller встроит в собранное приложение → LLM extraction будет работать.
 
 ### Known Issues
 
-- **OpenRouter 401 `User not found`** — API key was invalid/expired. Replaced with new key (`sk-or-v1-2e42...075`). Key is set locally in `.env` (gitignored), not committed to repo.
-- **Model `google/gemini-2.0-pro-exp-02-05:free`** — removed from OpenRouter. Replaced with `openrouter/free`.
+- **OpenRouter key was invalid** — replaced with new key (`sk-or-v1-2e42...075` ✅ работает). Key lives in `.env` (gitignored) locally, and in GitHub Secret for CI.
+- **Model changed**: `google/gemini-2.0-pro-exp-02-05:free` removed from OpenRouter → replaced with `openrouter/free` (OpenRouter auto-selects free model).
 - PyInstaller warning on Windows: `Failed to collect submodules for 'litellm.proxy.ui_crud_endpoints'` — non-blocking
 - Node.js 20 deprecation warnings in Actions (migration to Node 24 by June 2026)
 
 ### TODO
 
-- [ ] **HIGH** Протестировать с другим API-ключом openrouter/cerebras — текущий ключ выдаёт 401 `User not found`
-- [ ] MEDIUM Set `API_KEY` GitHub Secret (`Settings → Secrets → Actions`) чтобы LLM extraction работал в CI
+- [ ] **HIGH** Установить `API_KEY` GitHub Secret с новым валидным ключом (`sk-or-v1-2e42...075`)
+- [ ] **HIGH** Протестировать на CI после установки секрета — должен получить не `SKIP`, а `PASS` для LLM extraction
+- [ ] MEDIUM Протестировать локально: `python3 scripts/process_pipeline.py --input-files <file>`
 - [ ] LOW Скачать собранные артефакты и проверить локально
