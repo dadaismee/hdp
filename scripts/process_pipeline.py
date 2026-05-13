@@ -22,13 +22,13 @@ def log(message):
     print(f"[{time.strftime('%H:%M:%S')}] {message}")
     sys.stdout.flush()
 
-def run_command(command, check=True):
+def run_command(command, check=True, timeout=120):
     try:
-        # On Windows, we need shell=True sometimes if we rely on PATH lookup for 'pandoc'
-        # But here we often provide full path. 
-        # If shell=True, arguments might need quoting. subprocess.check_call handles list args well without shell=True usually.
-        # However, for debugging connection issues, capture_output is better.
-        subprocess.run(command, check=check, capture_output=True, text=True, encoding='utf-8', errors='replace')
+        subprocess.run(command, check=check, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
+    except subprocess.TimeoutExpired:
+        log(f"ТАЙМАУТ: команда {' '.join(command)} не завершилась за {timeout} сек")
+        if check:
+            raise
     except subprocess.CalledProcessError as e:
         log(f"Ошибка при выполнении команды: {e}")
         log(f"STDERR: {e.stderr}")
@@ -73,6 +73,7 @@ def main():
         sys.stderr.reconfigure(encoding='utf-8')
 
     log("--- Запуск конвейера обработки документов ---")
+    log(f"Платформа: {sys.platform}, frozen={getattr(sys, 'frozen', False)}")
     
     # Determine Working Directories
     if args.output_dir:

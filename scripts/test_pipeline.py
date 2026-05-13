@@ -85,7 +85,7 @@ def run_pipeline():
 
     log(f"Running: {' '.join(cmd)}")
     # Use UTF-8 on all platforms to avoid cp1252 decode errors on Windows
-    result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
 
     stdout = result.stdout or ""
     stderr = result.stderr or ""
