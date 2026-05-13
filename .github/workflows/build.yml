@@ -52,24 +52,11 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Inject API key into config
+    - name: Create .env from secret
+      shell: bash
       env:
         API_KEY: ${{ github.event.inputs.api_key || secrets.API_KEY }}
-      shell: bash
-      run: |
-        python << 'PYEOF'
-        import yaml, os
-        key = os.environ.get('API_KEY', '')
-        if not key:
-            print('No API_KEY env var — skipping injection')
-        else:
-            with open('config.yml', 'r') as f:
-                cfg = yaml.safe_load(f)
-            cfg.setdefault('llm_settings', {})['api_key'] = key
-            with open('config.yml', 'w') as f:
-                yaml.dump(cfg, f, allow_unicode=True)
-            print('API key injected into config.yml')
-        PYEOF
+      run: echo "OPENROUTER_API_KEY=$API_KEY" > .env
 
     - name: Install Pandoc (Windows)
       if: runner.os == 'Windows'

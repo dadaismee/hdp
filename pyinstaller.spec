@@ -9,7 +9,8 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [
     ('system_prompt.txt', '.'),
-    ('config.yml', '.')
+    ('config.yml', '.'),
+    ('.env', '.')
 ]
 binaries = []
 hiddenimports = ['pandas', 'litellm', 'yaml', 'docx', 'bs4', 'tiktoken_ext.openai_public', 'tiktoken_ext', 'certifi']

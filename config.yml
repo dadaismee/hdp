@@ -1,6 +1,5 @@
 llm_settings:
   provider: openrouter
-  api_key: ""
   model: openrouter/free
   temperature: 0.1
   timeout: 600

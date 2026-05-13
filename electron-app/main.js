@@ -284,7 +284,12 @@ ipcMain.on('run-process', (event, filePaths) => {
         console.log(`Spawning: ${cmd} with args: ${cmdArgs}`);
         const pythonProcess = spawn(cmd, cmdArgs, {
             cwd: app.isPackaged ? path.dirname(cmd) : ROOT_DIR,
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
+            env: {
+                ...process.env,
+                OPENROUTER_API_KEY: DOT_ENV.OPENROUTER_API_KEY || '',
+                PYTHONIOENCODING: 'utf-8',
+                PYTHONUTF8: '1'
+            }
         });
 
         pythonProcess.stdout.on('data', (data) => {

@@ -9,6 +9,13 @@ import argparse
 from pathlib import Path
 from litellm import completion
 
+# Load .env (single source of truth for API key — local dev + CI)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Windows SSL fix: use certifi certificate bundle
 try:
     import certifi
@@ -49,7 +56,6 @@ def load_config(config_path=None):
             "temperature": 0.1,
             "timeout": 600,
             "base_url": "https://openrouter.ai/api/v1",
-            "api_key": ""
         }
     }
     
@@ -68,6 +74,13 @@ def load_config(config_path=None):
             
     except Exception as e:
         print(f"Warning: Could not load config.yml: {e}")
+    
+    # Inject API key from env var (single source of truth)
+    env_key = os.environ.get('OPENROUTER_API_KEY', '') or ''
+    if env_key:
+        default_config['llm_settings']['api_key'] = env_key
+    elif 'api_key' not in default_config['llm_settings'] or not default_config['llm_settings'].get('api_key'):
+        default_config['llm_settings']['api_key'] = ''
     
     return default_config
 

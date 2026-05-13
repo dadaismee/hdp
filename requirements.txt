@@ -6,3 +6,4 @@ beautifulsoup4
 tiktoken
 openai
 certifi
+python-dotenv
